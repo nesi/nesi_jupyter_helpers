@@ -1,11 +1,14 @@
 # NeSI Jupyter helpers
 
-This repository contains tools to help users to use NeSI's JupyterHub.
+This repository contains a Python package to help users of [jupyter.nesi.org.nz](https://jupyter.nesi.org.nz).
 
 
 ## Installation
 
-TODO
+You can install this Python package in your home using `pip`:
+```
+pip install --user git+https://github.com/nesi/nesi_jupyter_helpers
+```
 
 
 ## Getting started
