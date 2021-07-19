@@ -97,6 +97,7 @@ def main(
     wrapper_script = kernel_dir / "wrapper.bash"
     wrapper_script.write_text(wrapper_script_code)
     wrapper_script.chmod(0o770)
+    print(f"Added wrapper script in {wrapper_script}")
 
     # modify the kernel description file
     kernel_def = {
@@ -110,11 +111,14 @@ def main(
         "display_name": kernel_name,
         "language": "python",
     }
-    with (kernel_dir / "kernel.json").open("w") as fd:
+    kernel_file = kernel_dir / "kernel.json"
+    with kernel_file.open("w") as fd:
         json.dump(kernel_def, fd, indent=4)
+    print(f"Updated kernel JSON file {kernel_file}")
 
-    print("Use the following command to remove the kernel:")
+    print("\nUse the following command to remove the kernel:")
     print(f"\n    jupyter-kernelspec remove {kernel_name}\n")
+
 
 if __name__ == "__main__":
     args = parse_args()
