@@ -16,9 +16,17 @@ pip install --user git+https://github.com/nesi/nesi_jupyter_helpers
 
 TODO document `nesi-add-kernel` usage
 
+TODO example to add a TF kernel, using NeSI's module
+```
+nesi-add-kernel tf_kernel TensorFlow/2.4.1-gimkl-2020a-Python-3.8.2
+```
+
+TODO example to add a conda env, using it's path
+
 
 ## TODOs
 
+- fix --conda-name option
 - add NeSI in the name of the tool
 - add venv option
 - add singularity option
