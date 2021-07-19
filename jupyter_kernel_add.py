@@ -15,8 +15,8 @@ module purge
 
 # load required modules
 module load slurm NeSI
-module load {modules}
-{conda}
+{modules_txt}
+{conda_txt}
 # run the kernel
 exec python $@
 """
@@ -34,7 +34,6 @@ fi
 source $(conda info --base)/etc/profile.d/conda.sh
 conda deactivate  # enforce base environment to be unloaded
 conda activate {conda_venv}
-
 """
 
 
@@ -47,7 +46,7 @@ def parse_args() -> Namespace:
     )
     parser.add_argument("kernel_name", help="Jupyter kernel name")
     parser.add_argument(
-        "module", nargs="+", help="NeSI module to load before running the kernel"
+        "module", nargs="*", help="NeSI module to load before running the kernel"
     )
     parser.add_argument("--conda-path", help="path to a Conda environment")
     parser.add_argument("--conda-name", type=Path, help="name of a Conda environment")
@@ -57,11 +56,11 @@ def parse_args() -> Namespace:
     if args.conda_path is not None and args.conda_name is not None:
         sys.exit("error: --conda-path and --conda-name options are not compatible")
     elif args.conda_path is not None:
-        args.conda_venv = str(Path(args.conda_path).resolve())
+        args.conda = str(Path(args.conda_path).resolve())
     elif args.conda_name is not None:
-        args.conda_venv = args.conda_name
+        args.conda = args.conda_name
     else:
-        args.conda_venv = None
+        args.conda = None
 
     return args
 
@@ -69,7 +68,7 @@ def parse_args() -> Namespace:
 def main(
     kernel_name: str,
     modules: T.Iterable[str],
-    conda_venv: T.Optional[str] = None,
+    conda: T.Optional[str] = None,
 ):
     """Register a new jupyter kernel, with a wrapper script to load NeSI modules"""
 
@@ -82,13 +81,18 @@ def main(
     kernel_dir = Path.home() / ".local/share/jupyter/kernels/" / kernel_name
 
     # add a bash wrapper script
-    if conda_venv is None:
-        conda = ""
+    if len(modules) == 0:
+        modules_txt = ""
     else:
-        conda = CONDA_TEMPLATE.format(conda_venv=conda_venv)
+        modules_txt = "module load " + " ".join(modules)
+
+    if conda is None:
+        conda_txt = ""
+    else:
+        conda_txt = CONDA_TEMPLATE.format(conda_venv=conda)
 
     wrapper_script_code = WRAPPER_TEMPLATE.format(
-        conda=conda, modules=" ".join(modules)
+        conda_txt=conda_txt, modules_txt=modules_txt
     )
     wrapper_script = kernel_dir / "wrapper.bash"
     wrapper_script.write_text(wrapper_script_code)
@@ -112,4 +116,4 @@ def main(
 
 if __name__ == "__main__":
     args = parse_args()
-    main(args.kernel_name, args.module, args.conda_venv)
+    main(args.kernel_name, args.module, args.conda)
