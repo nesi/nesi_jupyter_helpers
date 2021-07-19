@@ -8,28 +8,24 @@ from pathlib import Path
 WRAPPER_TEMPLATE="""\
 #!/usr/bin/env bash
 
-# This script is used in ~/.local/share/jupyter/kernels/{kernel_name}/kernel.json
-# to load environment modules before starting the kernel.
-
 # start with a clean environment
 module purge
 
-# load required modules here
+# load required modules
 module load slurm NeSI
 module load {modules}
-
 {conda}
-
 # run the kernel
 exec python $@
 """
 
 CONDA_TEMPLATE="""\
+
 # load conda & CUDA modules on Mahuika or Maui
 if hostname | grep -q "maui"; then
-    CONDA_MODULE="Anaconda3/2020.02-GCC-7.1.0"
+    CONDA_MODULE="Anaconda3"
 else
-    CONDA_MODULE="Miniconda3/4.8.2"
+    CONDA_MODULE="Miniconda3"
 fi
 module load "$CONDA_MODULE"
 
@@ -37,13 +33,13 @@ module load "$CONDA_MODULE"
 source $(conda info --base)/etc/profile.d/conda.sh
 conda deactivate  # enforce base environment to be unloaded
 conda activate {CONDA_VENV_PATH}
+
 """
 
 kernel_name = "test_script"
 modules = ["TensorFlow/2.4.1-gimkl-2020a-Python-3.8.2"]
 
 # create a new kernel
-# python -m ipykernel install --user --name $(KERNEL_NAME)
 subprocess.run(
     ["python", "-m", "ipykernel", "install", "--user", "--name", kernel_name],
     check=True
@@ -53,10 +49,11 @@ kernel_dir = Path.home() / ".local/share/jupyter/kernels/" / kernel_name
 
 # add a bash wrapper script
 wrapper_script_code = WRAPPER_TEMPLATE.format(
-    kernel_name=kernel_name, conda="", modules=" ".join(modules)
+    conda="", modules=" ".join(modules)
 )
 wrapper_script = kernel_dir / "wrapper.bash"
 wrapper_script.write_text(wrapper_script_code)
+wrapper_script.chmod(0o770)
 
 # modify the kernel description file
 kernel_def = {
