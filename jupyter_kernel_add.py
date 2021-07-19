@@ -113,6 +113,8 @@ def main(
     with (kernel_dir / "kernel.json").open("w") as fd:
         json.dump(kernel_def, fd, indent=4)
 
+    print("Use the following command to remove the kernel:")
+    print(f"\n    jupyter-kernelspec remove {kernel_name}\n")
 
 if __name__ == "__main__":
     args = parse_args()
