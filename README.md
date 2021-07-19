@@ -1,6 +1,7 @@
 # NeSI Jupyter helpers
 
-This repository contains a Python package to help users of [jupyter.nesi.org.nz](https://jupyter.nesi.org.nz).
+This repository contains a Python package providing tools to help users of 
+[jupyter.nesi.org.nz](https://jupyter.nesi.org.nz).
 
 
 ## Installation
@@ -13,7 +14,7 @@ pip install --user git+https://github.com/nesi/nesi_jupyter_helpers
 
 ## Getting started
 
-TODO
+TODO document `nesi-add-kernel` usage
 
 
 ## TODOs
