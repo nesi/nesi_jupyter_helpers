@@ -14,7 +14,7 @@ WRAPPER_TEMPLATE = """\
 module purge
 
 # load required modules
-module load slurm NeSI
+module load slurm NeSI  # ensure these modules gets loaded even on Maui ancil.
 {modules_txt}
 {conda_txt}
 # run the kernel
