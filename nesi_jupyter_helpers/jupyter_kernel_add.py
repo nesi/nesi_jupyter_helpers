@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import sys
 import json
 import subprocess
@@ -65,7 +63,7 @@ def parse_args() -> Namespace:
     return args
 
 
-def main(
+def add_kernel(
     kernel_name: str,
     modules: T.Iterable[str],
     conda: T.Optional[str] = None,
@@ -120,6 +118,6 @@ def main(
     print(f"\n    jupyter-kernelspec remove {kernel_name}\n")
 
 
-if __name__ == "__main__":
+def main():
     args = parse_args()
-    main(args.kernel_name, args.module, args.conda)
+    add_kernel(args.kernel_name, args.module, args.conda)
