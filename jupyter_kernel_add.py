@@ -6,7 +6,7 @@ import typing as T
 from pathlib import Path
 from argparse import ArgumentParser, Namespace
 
-WRAPPER_TEMPLATE="""\
+WRAPPER_TEMPLATE = """\
 #!/usr/bin/env bash
 
 # start with a clean environment
@@ -20,7 +20,7 @@ module load {modules}
 exec python $@
 """
 
-CONDA_TEMPLATE="""\
+CONDA_TEMPLATE = """\
 
 # load conda & CUDA modules on Mahuika or Maui
 if hostname | grep -q "maui"; then
@@ -56,30 +56,28 @@ def main(kernel_name: str, modules: T.Iterable[str]):
     # create a new kernel
     subprocess.run(
         ["python", "-m", "ipykernel", "install", "--user", "--name", kernel_name],
-        check=True
+        check=True,
     )
 
     kernel_dir = Path.home() / ".local/share/jupyter/kernels/" / kernel_name
 
     # add a bash wrapper script
-    wrapper_script_code = WRAPPER_TEMPLATE.format(
-        conda="", modules=" ".join(modules)
-    )
+    wrapper_script_code = WRAPPER_TEMPLATE.format(conda="", modules=" ".join(modules))
     wrapper_script = kernel_dir / "wrapper.bash"
     wrapper_script.write_text(wrapper_script_code)
     wrapper_script.chmod(0o770)
 
     # modify the kernel description file
     kernel_def = {
-         "argv": [
-             str(wrapper_script),
-             "-m",
-             "ipykernel_launcher",
-             "-f",
-             "{connection_file}"
-         ],
-         "display_name": kernel_name,
-         "language": "python"
+        "argv": [
+            str(wrapper_script),
+            "-m",
+            "ipykernel_launcher",
+            "-f",
+            "{connection_file}",
+        ],
+        "display_name": kernel_name,
+        "language": "python",
     }
     with (kernel_dir / "kernel.json").open("w") as fd:
         json.dump(kernel_def, fd, indent=4)
