@@ -26,9 +26,6 @@ TODO example to add a conda env, using it's path
 
 ## TODOs
 
-- fix --conda-name option
-- add NeSI in the name of the tool
 - add venv option
 - add singularity option
-- check module exists
 - check conda module not loaded by user
