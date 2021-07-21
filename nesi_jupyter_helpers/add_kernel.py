@@ -1,5 +1,6 @@
 import sys
 import json
+import tempfile
 import subprocess
 import typing as T
 from pathlib import Path
@@ -7,6 +8,8 @@ from argparse import ArgumentParser, Namespace
 
 WRAPPER_TEMPLATE = """\
 #!/usr/bin/env bash
+
+set -e
 
 # start with a clean environment
 module purge
@@ -70,15 +73,13 @@ def add_kernel(
 ):
     """Register a new jupyter kernel, with a wrapper script to load NeSI modules"""
 
-    # create a new kernel
-    subprocess.run(
-        ["python", "-m", "ipykernel", "install", "--user", "--name", kernel_name],
-        check=True,
-    )
-
     kernel_dir = Path.home() / ".local/share/jupyter/kernels/" / kernel_name
 
-    # add a bash wrapper script
+    # check kernel directory does not already exist
+    if kernel_dir.exists():
+        sys.exit(f"Error: Kernel already exists: {kernel_dir}")
+
+    # create a bash wrapper script
     if len(modules) == 0:
         modules_txt = ""
     else:
@@ -92,6 +93,48 @@ def add_kernel(
     wrapper_script_code = WRAPPER_TEMPLATE.format(
         conda_txt=conda_txt, modules_txt=modules_txt
     )
+
+    # check the wrapper script actually runs
+    with tempfile.NamedTemporaryFile(mode="w", delete=False) as fh:
+        fh.write(wrapper_script_code)
+    tmp_wrapper_script = Path(fh.name)
+    tmp_wrapper_script.chmod(0o770)
+    try:
+        subprocess.run(
+            [tmp_wrapper_script, "--version"],
+            check=True,
+            capture_output=True,
+            universal_newlines=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        print(exc.stdout)
+        print(exc.stderr)
+        tmp_wrapper_script.unlink()
+        sys.exit("Error: unable to create wrapper script, check modules and other options are correct")
+
+    # check ipykernel is installed in the kernel environment
+    try:
+        subprocess.run(
+            [tmp_wrapper_script, "-m", "ipykernel_launcher", "--version"],
+            check=True,
+            capture_output=True,
+            universal_newlines=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        print(exc.stdout)
+        print(exc.stderr)
+        tmp_wrapper_script.unlink()
+        sys.exit("Error: ipykernel is not installed in the kernel environment")
+
+    tmp_wrapper_script.unlink()
+
+    # create a new kernel
+    subprocess.run(
+        ["python", "-m", "ipykernel", "install", "--user", "--name", kernel_name],
+        check=True,
+    )
+
+    # add the wrapper script to the kernel dir
     wrapper_script = kernel_dir / "wrapper.bash"
     wrapper_script.write_text(wrapper_script_code)
     wrapper_script.chmod(0o770)
