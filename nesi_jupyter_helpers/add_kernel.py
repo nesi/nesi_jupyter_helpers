@@ -1,3 +1,4 @@
+import os
 import sys
 import json
 import tempfile
@@ -48,10 +49,11 @@ def parse_args() -> Namespace:
     )
     parser.add_argument("kernel_name", help="Jupyter kernel name")
     parser.add_argument(
-        "module", nargs="*", help="NeSI module to load before running the kernel"
+        "module", nargs="*", help="NeSI module(s) to load before running the kernel"
     )
     parser.add_argument("--conda-path", help="path to a Conda environment")
     parser.add_argument("--conda-name", type=Path, help="name of a Conda environment")
+    parser.add_argument("--shared", action="store_true", help="share the kernel with other members of your NeSI project")
 
     args = parser.parse_args()
 
@@ -69,12 +71,22 @@ def parse_args() -> Namespace:
 
 def add_kernel(
     kernel_name: str,
+    shared: bool,
     modules: T.Iterable[str],
     conda: T.Optional[str] = None,
 ):
     """Register a new jupyter kernel, with a wrapper script to load NeSI modules"""
 
-    kernel_dir = Path.home() / ".local/share/jupyter/kernels/" / kernel_name
+    # path to kernel directory
+    if shared:
+        account = os.getenv("SLURM_JOB_ACCOUNT")
+        if account is None:
+            sys.exit("Error: cannot determine project to share kernel with, try running within a Jupyter terminal")
+        print(f"Creating shared kernel for {account}")
+        prefix_dir = Path(f"/nesi/project/{account}/.jupyter")
+        kernel_dir = prefix_dir / "share/jupyter/kernels/" / kernel_name
+    else:
+        kernel_dir = Path.home() / ".local/share/jupyter/kernels/" / kernel_name
 
     # check kernel directory does not already exist
     if kernel_dir.exists():
@@ -89,6 +101,8 @@ def add_kernel(
     if conda is None:
         conda_txt = ""
     else:
+        if shared:
+            print(f"Make sure your conda environment is accessible to members of {account}")
         conda_txt = CONDA_TEMPLATE.format(conda_venv=conda)
 
     wrapper_script_code = WRAPPER_TEMPLATE.format(
@@ -131,8 +145,14 @@ def add_kernel(
         sys.exit("Error: ipykernel could not be installed in the kernel environment")
 
     # create a new kernel
+    cmdargs = ["python", "-m", "ipykernel", "install", "--name", kernel_name]
+    if shared:
+        cmdargs.extend(["--prefix", prefix_dir])
+    else:
+        cmdargs.append("--user")
+    print(f"Installing kernel: {' '.join(map(str, cmdargs))}")
     subprocess.run(
-        ["python", "-m", "ipykernel", "install", "--user", "--name", kernel_name],
+        cmdargs,
         check=True,
     )
 
@@ -164,4 +184,4 @@ def add_kernel(
 
 def main():
     args = parse_args()
-    add_kernel(args.kernel_name, args.module, args.conda)
+    add_kernel(args.kernel_name, args.shared, args.module, args.conda)
