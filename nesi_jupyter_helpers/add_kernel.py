@@ -139,7 +139,7 @@ def add_kernel(
     # add the wrapper script to the kernel dir
     wrapper_script_dest = kernel_dir / "wrapper.bash"
     shutil.move(wrapper_script, wrapper_script_dest)
-    print(f"Added wrapper script in {wrapper_script}")
+    print(f"Added wrapper script in {wrapper_script_dest}")
 
     # modify the kernel description file
     kernel_def = {
