@@ -2,6 +2,7 @@ import sys
 import json
 import tempfile
 import subprocess
+import shutil
 import typing as T
 from pathlib import Path
 from argparse import ArgumentParser, Namespace
@@ -94,14 +95,17 @@ def add_kernel(
         conda_txt=conda_txt, modules_txt=modules_txt
     )
 
-    # check the wrapper script actually runs
+    # use a temporary file for testing purpose
     with tempfile.NamedTemporaryFile(mode="w", delete=False) as fh:
         fh.write(wrapper_script_code)
-    tmp_wrapper_script = Path(fh.name)
-    tmp_wrapper_script.chmod(0o770)
+
+    wrapper_script = Path(fh.name)
+    wrapper_script.chmod(0o770)
+
+    print("Testing wrapper script")
     try:
         subprocess.run(
-            [tmp_wrapper_script, "--version"],
+            [wrapper_script, "--version"],
             check=True,
             capture_output=True,
             universal_newlines=True,
@@ -109,13 +113,13 @@ def add_kernel(
     except subprocess.CalledProcessError as exc:
         print(exc.stdout)
         print(exc.stderr)
-        tmp_wrapper_script.unlink()
+        wrapper_script.unlink()
         sys.exit("Error: unable to create wrapper script, check modules and other options are correct")
 
-    # check ipykernel is installed in the kernel environment
+    print("Checking & installing ipykernel package in the kernel environment")
     try:
         subprocess.run(
-            [tmp_wrapper_script, "-m", "ipykernel_launcher", "--version"],
+            [wrapper_script, "-m", "pip", "install", "ipykernel"],
             check=True,
             capture_output=True,
             universal_newlines=True,
@@ -123,10 +127,8 @@ def add_kernel(
     except subprocess.CalledProcessError as exc:
         print(exc.stdout)
         print(exc.stderr)
-        tmp_wrapper_script.unlink()
-        sys.exit("Error: ipykernel is not installed in the kernel environment")
-
-    tmp_wrapper_script.unlink()
+        wrapper_script.unlink()
+        sys.exit("Error: ipykernel could not be installed in the kernel environment")
 
     # create a new kernel
     subprocess.run(
@@ -135,15 +137,14 @@ def add_kernel(
     )
 
     # add the wrapper script to the kernel dir
-    wrapper_script = kernel_dir / "wrapper.bash"
-    wrapper_script.write_text(wrapper_script_code)
-    wrapper_script.chmod(0o770)
+    wrapper_script_dest = kernel_dir / "wrapper.bash"
+    shutil.move(wrapper_script, wrapper_script_dest)
     print(f"Added wrapper script in {wrapper_script}")
 
     # modify the kernel description file
     kernel_def = {
         "argv": [
-            str(wrapper_script),
+            str(wrapper_script_dest),
             "-m",
             "ipykernel_launcher",
             "-f",
