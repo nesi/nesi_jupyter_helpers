@@ -21,6 +21,11 @@ TODO example to add a TF kernel, using NeSI's module
 nesi-add-kernel tf_kernel TensorFlow/2.4.1-gimkl-2020a-Python-3.8.2
 ```
 
+Example to add a TF kernel, using NeSI's module, and share the kernel with other members of your NeSI project
+```
+nesi-add-kernel --shared tf_kernel TensorFlow/2.4.1-gimkl-2020a-Python-3.8.2
+```
+
 TODO example to add a conda env, using it's path
 
 
