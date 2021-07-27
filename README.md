@@ -33,4 +33,3 @@ TODO example to add a conda env, using it's path
 
 - add venv option
 - add singularity option
-- check conda module not loaded by user
