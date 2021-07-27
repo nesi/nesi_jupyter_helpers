@@ -132,7 +132,7 @@ def add_kernel(
             sys.exit(f"error: --venv ({venv_path}) should point to a virtual environment directory")
         venv_activate_script = venv_path / "bin/activate"
         if not venv_activate_script.exists():
-            sys.exit(f"error: --venv ({venv_path}) does not appear to do a virtual environment (cannot find bin/activate)")
+            sys.exit(f"error: --venv ({venv_path}) does not appear to be a virtual environment (cannot find bin/activate)")
         venv_txt = VENV_TEMPLATE.format(venv_activate_script=venv_activate_script)
         print("Make sure you have specified the appropriate Python module(s) for your virtual environment")
 
