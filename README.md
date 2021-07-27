@@ -36,11 +36,11 @@ nesi-add-kernel --shared tf_kernel_shared TensorFlow/2.4.1-gimkl-2020a-Python-3.
 
 To add a Conda environment created using `conda create -p <conda_env_path>`, use:
 ```
-nesi-add-kernel my_conda_env --conda-path <conda_env_path>
+nesi-add-kernel my_conda_env -p <conda_env_path>
 ```
 otherwise if created using `conda create -n <conda_env_name>`, use:
 ```
-nesi-add-kernel my_conda_env --conda-name <conda_env_name>
+nesi-add-kernel my_conda_env -n <conda_env_name>
 ```
 
 If you want to use a Python virtual environment, don't forget to specify which
