@@ -49,7 +49,7 @@ def test_conda_env_name():
         run(f"jupyter-kernelspec remove -f {kernel_name}", shell=True, check=True)
         run(
             "module purge && module load Miniconda3/4.10.3 && "
-            "conda env remove -n {kernel_name} -y",
+            f"conda env remove -n {kernel_name} -y",
             shell=True,
             check=True,
         )
