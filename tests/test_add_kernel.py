@@ -11,7 +11,7 @@ def test_tf_module():
     try:
         add_kernel(kernel_name, "TensorFlow/2.4.1-gimkl-2020a-Python-3.8.2")
     finally:
-        run(f"jupyter-kernelspec remove -f {kernel_name}", shell=True, check=True)
+        run(["jupyter-kernelspec", "remove", "-f", kernel_name])
 
 
 def test_conda_env_path():
@@ -26,7 +26,7 @@ def test_conda_env_path():
     try:
         add_kernel(kernel_name, conda_path=conda_path)
     finally:
-        run(f"jupyter-kernelspec remove -f {kernel_name}", shell=True, check=True)
+        run(["jupyter-kernelspec", "remove", "-f", kernel_name])
         run(
             "module purge && module load Miniconda3/4.10.3 && "
             f"conda env remove -p {conda_path} -y",
@@ -46,7 +46,7 @@ def test_conda_env_name():
     try:
         add_kernel(kernel_name, conda_name=kernel_name)
     finally:
-        run(f"jupyter-kernelspec remove -f {kernel_name}", shell=True, check=True)
+        run(["jupyter-kernelspec", "remove", "-f", kernel_name])
         run(
             "module purge && module load Miniconda3/4.10.3 && "
             f"conda env remove -n {kernel_name} -y",
@@ -67,5 +67,5 @@ def test_venv():
     try:
         add_kernel(kernel_name, "Python/3.8.2-gimkl-2020a", venv=venv)
     finally:
-        run(f"jupyter-kernelspec remove -f {kernel_name}", shell=True, check=True)
+        run(["jupyter-kernelspec", "remove", "-f", kernel_name])
         shutil.rmtree(venv)
