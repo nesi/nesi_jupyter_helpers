@@ -75,4 +75,7 @@ pytest
 
 ## TODOs
 
+- add a test for "--shared"
+- run some code using the kernel in tests
+- add tests for incompatible options
 - add singularity option
