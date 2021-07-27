@@ -35,8 +35,6 @@ otherwise if created using `conda create -n <conda_env_name>`, use:
 nesi-add-kernel my_conda_env --conda-name <conda_env_name>
 ```
 
-TODO example to add a conda env, using it's path
-
 TODO add same examples for Python venv
 
 
