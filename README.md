@@ -59,6 +59,20 @@ nesi-add-kernel my_test_kernel Python/3.8.2-gimkl-2020a --venv my_test_venv
 ```
 
 
+## For maintainers
+
+To run the tests, you need to log in Mahuika and install the `dev` dependencies:
+```
+module purge && module load Python/3.8.2-gimkl-2020a
+git clone https://github.com/nesi/nesi_jupyter_helpers
+cd nesi_jupyter_helpers
+python -m venv venv
+. venv/bin/activate
+pip install -e .[dev]
+pytest
+```
+
+
 ## TODOs
 
 - add singularity option
