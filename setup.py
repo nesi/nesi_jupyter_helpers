@@ -9,7 +9,7 @@ setup(
     author_email="support@nesi.org.nz",
     license="MIT",
     packages=find_packages(),
-    install_requires=["ipykernel"],
+    install_requires=["ipykernel", "defopt", "pytest"],
     extras_require={"dev": ["black", "flake8"]},
     entry_points={
         "console_scripts": ["nesi-add-kernel=nesi_jupyter_helpers.add_kernel:main"]
