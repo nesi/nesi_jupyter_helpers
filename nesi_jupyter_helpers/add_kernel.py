@@ -131,10 +131,11 @@ def add_kernel(
                 "environment (cannot find bin/activate)"
             )
         venv_txt = VENV_TEMPLATE.format(venv_activate_script=venv_activate_script)
-        print(
-            "Make sure you have specified the appropriate Python module(s) for "
-            "your virtual environment"
-        )
+        if not any(m.startswith("Python") for m in module):
+            print(
+                "WARNING: Make sure to specify the appropriate Python module "
+                "for your virtual environment."
+            )
 
     wrapper_script_code = WRAPPER_TEMPLATE.format(
         conda_txt=conda_txt, modules_txt=modules_txt, venv_txt=venv_txt
