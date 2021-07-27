@@ -1,6 +1,7 @@
 import uuid
 from subprocess import run
 from pathlib import Path
+import shutil
 
 from nesi_jupyter_helpers.add_kernel import add_kernel
 
@@ -49,4 +50,14 @@ def test_conda_env_name():
 
 
 def test_venv():
-    pass
+    kernel_name = f"test_kernel_{uuid.uuid4()}"
+    venv = Path.cwd() / kernel_name
+    run(
+        "module purge && module load Python/3.8.2-gimkl-2020a && "
+        f"python -m venv {venv}",
+        shell=True,
+        check=True,
+    )
+    add_kernel(kernel_name, "Python/3.8.2-gimkl-2020a", venv=venv)
+    run(f"jupyter-kernelspec remove -f {kernel_name}", shell=True, check=True)
+    shutil.rmtree(venv)
