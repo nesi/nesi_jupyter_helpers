@@ -68,17 +68,17 @@ def add_kernel(
     """
 
     if conda_path is not None and conda_name is not None:
-        sys.exit("error: --conda-path and --conda-name options are not compatible")
+        sys.exit("ERROR: --conda-path and --conda-name options are not compatible")
 
     if (conda_path is not None or conda_name is not None) and venv is not None:
-        sys.exit("error: --conda-* and --venv options are not compatible")
+        sys.exit("ERROR: --conda-* and --venv options are not compatible")
 
     # path to kernel directory
     if shared:
         account = os.getenv("SLURM_JOB_ACCOUNT")
         if account is None:
             sys.exit(
-                "Error: cannot determine project to share kernel with, try"
+                "ERROR: cannot determine project to share kernel with, try"
                 "running within a Jupyter terminal"
             )
         print(f"Creating shared kernel for {account}")
@@ -89,7 +89,7 @@ def add_kernel(
 
     # check kernel directory does not already exist
     if kernel_dir.exists():
-        sys.exit(f"Error: Kernel already exists: {kernel_dir}")
+        sys.exit(f"ERROR: Kernel already exists: {kernel_dir}")
 
     # create a bash wrapper script
     if len(module) == 0:
@@ -121,13 +121,13 @@ def add_kernel(
         venv = venv.resolve()
         if not venv.is_dir():
             sys.exit(
-                f"error: --venv ({venv}) should point to a virtual environment "
+                f"ERROR: --venv ({venv}) should point to a virtual environment "
                 "directory"
             )
         venv_activate_script = venv / "bin/activate"
         if not venv_activate_script.exists():
             sys.exit(
-                f"error: --venv ({venv}) does not appear to be a virtual "
+                f"ERROR: --venv ({venv}) does not appear to be a virtual "
                 "environment (cannot find bin/activate)"
             )
         venv_txt = VENV_TEMPLATE.format(venv_activate_script=venv_activate_script)
@@ -160,7 +160,7 @@ def add_kernel(
         print(exc.stderr)
         wrapper_script.unlink()
         sys.exit(
-            "Error: unable to create wrapper script, check modules and other "
+            "ERROR: unable to create wrapper script, check modules and other "
             "options are correct"
         )
 
@@ -176,7 +176,7 @@ def add_kernel(
         print(exc.stdout)
         print(exc.stderr)
         wrapper_script.unlink()
-        sys.exit("Error: ipykernel could not be installed in the kernel environment")
+        sys.exit("ERROR: ipykernel could not be installed in the kernel environment")
 
     # create a new kernel
     cmdargs = ["python", "-m", "ipykernel", "install", "--name", kernel_name]
