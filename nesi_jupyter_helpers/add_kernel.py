@@ -217,5 +217,5 @@ def add_kernel(
 def main():
     defopt.run(
         add_kernel,
-        short={"conda-path": "-p", "conda-name": "-n", "venv": "-v", "shared": "-s"},
+        short={"conda-path": "p", "conda-name": "n", "venv": "v", "shared": "s"},
     )
