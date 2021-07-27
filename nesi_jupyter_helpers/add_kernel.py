@@ -20,6 +20,7 @@ module purge
 module load slurm NeSI  # ensure these modules gets loaded even on Maui ancil.
 {modules_txt}
 {conda_txt}
+{venv_txt}
 # run the kernel
 exec python $@
 """
@@ -39,6 +40,12 @@ conda deactivate  # enforce base environment to be unloaded
 conda activate {conda_venv}
 """
 
+VENV_TEMPLATE = """\
+
+# activate virtual environment
+source {venv_activate_script}
+"""
+
 
 def parse_args() -> Namespace:
     """Command line input parser"""
@@ -53,6 +60,7 @@ def parse_args() -> Namespace:
     )
     parser.add_argument("--conda-path", help="path to a Conda environment")
     parser.add_argument("--conda-name", type=Path, help="name of a Conda environment")
+    parser.add_argument("--venv", help="path to a Python virtual environment")
     parser.add_argument("--shared", action="store_true", help="share the kernel with other members of your NeSI project")
 
     args = parser.parse_args()
@@ -66,6 +74,12 @@ def parse_args() -> Namespace:
     else:
         args.conda = None
 
+    if args.conda is not None and args.venv is not None:
+        sys.exit("error: --conda-* and --venv options are not compatible")
+
+    if args.venv is not None:
+        args.venv = str(Path(args.venv).resolve())
+
     return args
 
 
@@ -74,6 +88,7 @@ def add_kernel(
     shared: bool,
     modules: T.Iterable[str],
     conda: T.Optional[str] = None,
+    venv: T.Optional[str] = None,
 ):
     """Register a new jupyter kernel, with a wrapper script to load NeSI modules"""
 
@@ -98,6 +113,7 @@ def add_kernel(
     else:
         modules_txt = "module load " + " ".join(modules)
 
+    # add conda environment
     if conda is None:
         conda_txt = ""
     else:
@@ -105,8 +121,23 @@ def add_kernel(
             print(f"Make sure your conda environment is accessible to members of {account}")
         conda_txt = CONDA_TEMPLATE.format(conda_venv=conda)
 
+    # add virtual environment
+    if venv is None:
+        venv_txt = ""
+    else:
+        if shared:
+            print(f"Make sure your virtual environment is accessible to members of {account}")
+        venv_path = Path(venv)
+        if not venv_path.is_dir():
+            sys.exit(f"error: --venv ({venv_path}) should point to a virtual environment directory")
+        venv_activate_script = venv_path / "bin/activate"
+        if not venv_activate_script.exists():
+            sys.exit(f"error: --venv ({venv_path}) does not appear to be a virtual environment (cannot find bin/activate)")
+        venv_txt = VENV_TEMPLATE.format(venv_activate_script=venv_activate_script)
+        print("Make sure you have specified the appropriate Python module(s) for your virtual environment")
+
     wrapper_script_code = WRAPPER_TEMPLATE.format(
-        conda_txt=conda_txt, modules_txt=modules_txt
+        conda_txt=conda_txt, modules_txt=modules_txt, venv_txt=venv_txt
     )
 
     # use a temporary file for testing purpose
@@ -184,4 +215,4 @@ def add_kernel(
 
 def main():
     args = parse_args()
-    add_kernel(args.kernel_name, args.shared, args.module, args.conda)
+    add_kernel(args.kernel_name, args.shared, args.module, args.conda, args.venv)
