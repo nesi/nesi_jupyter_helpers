@@ -6,7 +6,9 @@ import subprocess
 import shutil
 import typing as T
 from pathlib import Path
-from argparse import ArgumentParser, Namespace
+
+import defopt
+
 
 WRAPPER_TEMPLATE = """\
 #!/usr/bin/env bash
@@ -47,56 +49,38 @@ source {venv_activate_script}
 """
 
 
-def parse_args() -> Namespace:
-    """Command line input parser"""
-
-    parser = ArgumentParser(
-        description="register a new Jupyter kernel, with a wrapper script to "
-        "load NeSI modules",
-    )
-    parser.add_argument("kernel_name", help="Jupyter kernel name")
-    parser.add_argument(
-        "module", nargs="*", help="NeSI module(s) to load before running the kernel"
-    )
-    parser.add_argument("--conda-path", help="path to a Conda environment")
-    parser.add_argument("--conda-name", type=Path, help="name of a Conda environment")
-    parser.add_argument("--venv", help="path to a Python virtual environment")
-    parser.add_argument("--shared", action="store_true", help="share the kernel with other members of your NeSI project")
-
-    args = parser.parse_args()
-
-    if args.conda_path is not None and args.conda_name is not None:
-        sys.exit("error: --conda-path and --conda-name options are not compatible")
-    elif args.conda_path is not None:
-        args.conda = str(Path(args.conda_path).resolve())
-    elif args.conda_name is not None:
-        args.conda = args.conda_name
-    else:
-        args.conda = None
-
-    if args.conda is not None and args.venv is not None:
-        sys.exit("error: --conda-* and --venv options are not compatible")
-
-    if args.venv is not None:
-        args.venv = str(Path(args.venv).resolve())
-
-    return args
-
-
 def add_kernel(
     kernel_name: str,
-    shared: bool,
-    modules: T.Iterable[str],
-    conda: T.Optional[str] = None,
-    venv: T.Optional[str] = None,
+    *module: str,
+    conda_path: T.Optional[Path] = None,
+    conda_name: T.Optional[str] = None,
+    venv: T.Optional[Path] = None,
+    shared: bool = False,
 ):
-    """Register a new jupyter kernel, with a wrapper script to load NeSI modules"""
+    """Register a new jupyter kernel, with a wrapper script to load NeSI modules
+
+    :param kernel_name: Jupyter kernel name
+    :param module: NeSI module(s) to load before running the kernel
+    :param conda-path: path to a Conda environment
+    :param conda-name: name of a Conda environment
+    :param venv: path to a Python virtual environment
+    :param shared: share the kernel with other members of your NeSI project
+    """
+
+    if conda_path is not None and conda_name is not None:
+        sys.exit("ERROR: --conda-path and --conda-name options are not compatible")
+
+    if (conda_path is not None or conda_name is not None) and venv is not None:
+        sys.exit("ERROR: --conda-* and --venv options are not compatible")
 
     # path to kernel directory
     if shared:
         account = os.getenv("SLURM_JOB_ACCOUNT")
         if account is None:
-            sys.exit("Error: cannot determine project to share kernel with, try running within a Jupyter terminal")
+            sys.exit(
+                "ERROR: cannot determine project to share kernel with, try"
+                "running within a Jupyter terminal"
+            )
         print(f"Creating shared kernel for {account}")
         prefix_dir = Path(f"/nesi/project/{account}/.jupyter")
         kernel_dir = prefix_dir / "share/jupyter/kernels/" / kernel_name
@@ -105,36 +89,53 @@ def add_kernel(
 
     # check kernel directory does not already exist
     if kernel_dir.exists():
-        sys.exit(f"Error: Kernel already exists: {kernel_dir}")
+        sys.exit(f"ERROR: Kernel already exists: {kernel_dir}")
 
     # create a bash wrapper script
-    if len(modules) == 0:
+    if len(module) == 0:
         modules_txt = ""
     else:
-        modules_txt = "module load " + " ".join(modules)
+        modules_txt = "module load " + " ".join(module)
 
     # add conda environment
-    if conda is None:
+    if conda_name is None and conda_path is None:
         conda_txt = ""
     else:
         if shared:
-            print(f"Make sure your conda environment is accessible to members of {account}")
-        conda_txt = CONDA_TEMPLATE.format(conda_venv=conda)
+            print(
+                "Make sure your conda environment is accessible to members of "
+                f"{account}"
+            )
+        conda_venv = conda_path.resolve() if conda_name is None else conda_name
+        conda_txt = CONDA_TEMPLATE.format(conda_venv=conda_venv)
 
     # add virtual environment
     if venv is None:
         venv_txt = ""
     else:
         if shared:
-            print(f"Make sure your virtual environment is accessible to members of {account}")
-        venv_path = Path(venv)
-        if not venv_path.is_dir():
-            sys.exit(f"error: --venv ({venv_path}) should point to a virtual environment directory")
-        venv_activate_script = venv_path / "bin/activate"
+            print(
+                "Make sure your virtual environment is accessible to members of "
+                f"{account}"
+            )
+        venv = venv.resolve()
+        if not venv.is_dir():
+            sys.exit(
+                f"ERROR: --venv ({venv}) should point to a virtual environment "
+                "directory"
+            )
+        venv_activate_script = venv / "bin/activate"
         if not venv_activate_script.exists():
-            sys.exit(f"error: --venv ({venv_path}) does not appear to be a virtual environment (cannot find bin/activate)")
+            sys.exit(
+                f"ERROR: --venv ({venv}) does not appear to be a virtual "
+                "environment (cannot find bin/activate)"
+            )
         venv_txt = VENV_TEMPLATE.format(venv_activate_script=venv_activate_script)
-        print("Make sure you have specified the appropriate Python module(s) for your virtual environment")
+        if not any(m.startswith("Python") for m in module):
+            print(
+                "WARNING: Make sure to specify the appropriate Python module "
+                "for your virtual environment."
+            )
 
     wrapper_script_code = WRAPPER_TEMPLATE.format(
         conda_txt=conda_txt, modules_txt=modules_txt, venv_txt=venv_txt
@@ -159,7 +160,10 @@ def add_kernel(
         print(exc.stdout)
         print(exc.stderr)
         wrapper_script.unlink()
-        sys.exit("Error: unable to create wrapper script, check modules and other options are correct")
+        sys.exit(
+            "ERROR: unable to create wrapper script, check modules and other "
+            "options are correct"
+        )
 
     print("Checking & installing ipykernel package in the kernel environment")
     try:
@@ -173,7 +177,7 @@ def add_kernel(
         print(exc.stdout)
         print(exc.stderr)
         wrapper_script.unlink()
-        sys.exit("Error: ipykernel could not be installed in the kernel environment")
+        sys.exit("ERROR: ipykernel could not be installed in the kernel environment")
 
     # create a new kernel
     cmdargs = ["python", "-m", "ipykernel", "install", "--name", kernel_name]
@@ -182,10 +186,7 @@ def add_kernel(
     else:
         cmdargs.append("--user")
     print(f"Installing kernel: {' '.join(map(str, cmdargs))}")
-    subprocess.run(
-        cmdargs,
-        check=True,
-    )
+    subprocess.run(cmdargs, check=True)
 
     # add the wrapper script to the kernel dir
     wrapper_script_dest = kernel_dir / "wrapper.bash"
@@ -214,5 +215,7 @@ def add_kernel(
 
 
 def main():
-    args = parse_args()
-    add_kernel(args.kernel_name, args.shared, args.module, args.conda, args.venv)
+    defopt.run(
+        add_kernel,
+        short={"conda-path": "p", "conda-name": "n", "venv": "v", "shared": "s"},
+    )
