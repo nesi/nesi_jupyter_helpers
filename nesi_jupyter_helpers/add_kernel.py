@@ -58,6 +58,9 @@ exec python $@
 CONTAINER_TEMPLATE = """\
 module load Singularity
 
+# isolate container interpreter from user's site-packages directory
+export SINGULARITYENV_PYTHONNOUSERSITE=True
+
 # run the kernel inside the container
 exec singularity exec {container_args} {container} python $@
 """
