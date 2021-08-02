@@ -77,5 +77,4 @@ pytest
 
 - add a test for "--shared"
 - add tests for incompatible options
-- ensure wrapped environments are isolated from user's local packages
 - add singularity option

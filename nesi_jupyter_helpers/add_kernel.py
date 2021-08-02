@@ -21,6 +21,9 @@ module purge
 # load required modules
 module load slurm NeSI  # ensure these modules gets loaded even on Maui ancil.
 {modules_txt}
+
+# isolate conda/virtual environments from user's site-packages directory
+export PYTHONNOUSERSITE=True
 {conda_txt}
 {venv_txt}
 # run the kernel
