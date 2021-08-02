@@ -77,4 +77,5 @@ pytest
 
 - add a test for "--shared"
 - add tests for incompatible options
-- add singularity option
+- ensure container is isolated from user's site-package (if home folder is shared)
+- provide a better feedback about ipykernel installation in the container

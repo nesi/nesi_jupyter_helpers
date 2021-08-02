@@ -92,3 +92,45 @@ def test_venv():
     finally:
         run(["jupyter-kernelspec", "remove", "-f", kernel_name])
         shutil.rmtree(venv)
+
+
+def test_container():
+    kernel_name = f"test_kernel_{uuid.uuid4()}"
+    container = Path.cwd() / f"{kernel_name}.sif"
+    run(
+        "module purge && module load Singularity/3.8.0 && "
+        f"singularity pull {container} docker://sphinxdoc/sphinx:4.1.2",
+        shell=True,
+        check=True,
+    )
+    try:
+        add_kernel(kernel_name, container=container)
+        execute_notebook(
+            "import sphinx; assert sphinx.__version__ == '4.1.2'", kernel_name
+        )
+    finally:
+        run(["jupyter-kernelspec", "remove", "-f", kernel_name])
+        container.unlink()
+
+
+def test_container_args():
+    kernel_name = f"test_kernel_{uuid.uuid4()}"
+    container = Path.cwd() / f"{kernel_name}.sif"
+    run(
+        "module purge && module load Singularity/3.8.0 && "
+        f"singularity pull {container} docker://sphinxdoc/sphinx:4.1.2",
+        shell=True,
+        check=True,
+    )
+    try:
+        add_kernel(kernel_name, container=container, container_args="-c")
+        execute_notebook(
+            "import sphinx; assert sphinx.__version__ == '4.1.2'", kernel_name
+        )
+        execute_notebook(
+            "from pathlib import Path; assert len(list(Path.home().iterdir())) == 0",
+            kernel_name,
+        )
+    finally:
+        run(["jupyter-kernelspec", "remove", "-f", kernel_name])
+        container.unlink()
