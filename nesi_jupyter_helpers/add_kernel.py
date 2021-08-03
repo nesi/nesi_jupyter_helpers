@@ -179,7 +179,6 @@ def add_kernel(
     wrapper_script_code = WRAPPER_TEMPLATE.format(
         modules_txt=modules_txt, exec_txt=exec_txt
     )
-    print(wrapper_script_code)  # TODO remove
 
     # use a temporary file for testing purpose
     with tempfile.NamedTemporaryFile(mode="w", delete=False) as fh:
@@ -217,7 +216,10 @@ def add_kernel(
         print(exc.stdout)
         print(exc.stderr)
         wrapper_script.unlink()
-        sys.exit("ERROR: ipykernel could not be installed in the kernel environment")
+        sys.exit(
+            "ERROR: the ipykernel package could not be installed in the kernel "
+            "environment"
+        )
 
     # create a new kernel
     cmdargs = ["python", "-m", "ipykernel", "install", "--name", kernel_name]
