@@ -34,6 +34,19 @@ and to share the kernel with other members of your NeSI project:
 nesi-add-kernel --shared tf_kernel_shared TensorFlow/2.4.1-gimkl-2020a-Python-3.8.2
 ```
 
+To list all the installed kernels, use the following command:
+```
+jupyter-kernelspec list
+```
+and to delete a specific kernel:
+```
+jupyter-kernelspec remove <kernel_name>
+```
+where `<kernel_name>` stands for the name of the kernel to delete.
+
+
+### Conda environment
+
 To add a Conda environment created using `conda create -p <conda_env_path>`, use:
 ```
 nesi-add-kernel my_conda_env -p <conda_env_path>
@@ -42,6 +55,9 @@ otherwise if created using `conda create -n <conda_env_name>`, use:
 ```
 nesi-add-kernel my_conda_env -n <conda_env_name>
 ```
+
+
+### Virtual environment
 
 If you want to use a Python virtual environment, don't forget to specify which
 Python module you used to create it.
@@ -57,6 +73,9 @@ to create the corresponding `my_test_kernel` kernel, we need to use the command:
 ```
 nesi-add-kernel my_test_kernel Python/3.8.2-gimkl-2020a --venv my_test_venv
 ```
+
+
+### Singularity container
 
 To use a Singularity container, use the `-c` or `--container` options as follows:
 ```
