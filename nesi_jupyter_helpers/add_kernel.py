@@ -8,6 +8,7 @@ import typing as T
 from pathlib import Path
 
 import defopt
+import jupyter_core.paths
 
 
 WRAPPER_TEMPLATE = """\
@@ -178,7 +179,7 @@ def add_kernel(
                 f"ERROR: --container ({container}) should point to a Singularity "
                 "container image file"
             )
-        runtime_dir = Path.home().resolve() / ".local/share/jupyter/runtime"
+        runtime_dir = jupyter_core.paths.jupyter_runtime_dir()
         exec_txt = CONTAINER_TEMPLATE.format(
             container=container, container_args=container_args, runtime_dir=runtime_dir
         )
