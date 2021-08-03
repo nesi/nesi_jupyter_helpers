@@ -123,9 +123,7 @@ def test_container_args():
         check=True,
     )
     try:
-        add_kernel(
-            kernel_name, container=container, container_args="--no-home"
-        )
+        add_kernel(kernel_name, container=container, container_args="--no-home")
         execute_notebook(
             "import jupyterlab; assert jupyterlab.__version__ == '3.0.16'", kernel_name
         )
