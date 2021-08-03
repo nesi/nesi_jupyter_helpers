@@ -99,14 +99,14 @@ def test_container():
     container = Path.cwd() / f"{kernel_name}.sif"
     run(
         "module purge && module load Singularity/3.8.0 && "
-        f"singularity pull {container} docker://sphinxdoc/sphinx:4.1.2",
+        f"singularity pull {container} docker://jupyter/base-notebook:lab-3.0.16",
         shell=True,
         check=True,
     )
     try:
         add_kernel(kernel_name, container=container)
         execute_notebook(
-            "import sphinx; assert sphinx.__version__ == '4.1.2'", kernel_name
+            "import jupyterlab; assert jupyterlab.__version__ == '3.0.16'", kernel_name
         )
     finally:
         run(["jupyter-kernelspec", "remove", "-f", kernel_name])
@@ -118,18 +118,19 @@ def test_container_args():
     container = Path.cwd() / f"{kernel_name}.sif"
     run(
         "module purge && module load Singularity/3.8.0 && "
-        f"singularity pull {container} docker://sphinxdoc/sphinx:4.1.2",
+        f"singularity pull {container} docker://jupyter/base-notebook:lab-3.0.16",
         shell=True,
         check=True,
     )
     try:
-        add_kernel(kernel_name, container=container, container_args="-c")
-        execute_notebook(
-            "import sphinx; assert sphinx.__version__ == '4.1.2'", kernel_name
+        add_kernel(
+            kernel_name, container=container, container_args="--no-home"
         )
         execute_notebook(
-            "from pathlib import Path; assert len(list(Path.home().iterdir())) == 0",
-            kernel_name,
+            "import jupyterlab; assert jupyterlab.__version__ == '3.0.16'", kernel_name
+        )
+        execute_notebook(
+            "from pathlib import Path; assert not Path.home().exists()", kernel_name
         )
     finally:
         run(["jupyter-kernelspec", "remove", "-f", kernel_name])
