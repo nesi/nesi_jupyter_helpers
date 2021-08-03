@@ -62,7 +62,7 @@ module load Singularity
 export SINGULARITYENV_PYTHONNOUSERSITE=True
 
 # run the kernel inside the container
-exec singularity exec {container_args} {container} python $@
+exec singularity exec -B {runtime_dir} {container_args} {container} python $@
 """
 
 
@@ -178,8 +178,9 @@ def add_kernel(
                 f"ERROR: --container ({container}) should point to a Singularity "
                 "container image file"
             )
+        runtime_dir = Path.home().resolve() / ".local/share/jupyter/runtime"
         exec_txt = CONTAINER_TEMPLATE.format(
-            container=container, container_args=container_args
+            container=container, container_args=container_args, runtime_dir=runtime_dir
         )
 
     # ...or the default python interpreter
