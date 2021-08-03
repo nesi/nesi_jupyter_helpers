@@ -134,8 +134,13 @@ def add_kernel(
                 "Make sure your conda environment is accessible to members of "
                 f"{account}"
             )
-        # TODO check if folder exist and is a conda environment
-        exec_txt = CONDA_TEMPLATE.format(conda_venv=conda_path.resolve())
+        conda_path = conda_path.resolve()
+        if not conda_path.is_dir():
+            sys.exit(
+                f"ERROR: --conda-path ({conda_path}) should point to a conda "
+                "environment directory"
+            )
+        exec_txt = CONDA_TEMPLATE.format(conda_venv=conda_path)
 
     # ...or a virtual environment...
     elif venv is not None:
@@ -165,11 +170,16 @@ def add_kernel(
 
     # ...or a Singularity container...
     elif container is not None:
+        container = container.resolve()
         if shared:
             print("Make sure your container is accessible to members of {account}")
-        # TODO check that container file exists
+        if not container.is_file():
+            sys.exit(
+                f"ERROR: --container ({container}) should point to a Singularity "
+                "container image file"
+            )
         exec_txt = CONTAINER_TEMPLATE.format(
-            container=container.resolve(), container_args=container_args
+            container=container, container_args=container_args
         )
 
     # ...or the default python interpreter
