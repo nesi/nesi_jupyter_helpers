@@ -8,6 +8,7 @@ import typing as T
 from pathlib import Path
 
 import defopt
+import jupyter_core.paths
 
 
 WRAPPER_TEMPLATE = """\
@@ -21,31 +22,48 @@ module purge
 # load required modules
 module load slurm NeSI  # ensure these modules gets loaded even on Maui ancil.
 {modules_txt}
-{conda_txt}
-{venv_txt}
-# run the kernel
-exec python $@
+{exec_txt}
 """
 
 CONDA_TEMPLATE = """\
-
-# load conda & CUDA modules on Mahuika or Maui
+# load Conda on Mahuika or Maui
 if hostname | grep -q "maui"; then
     module load Anaconda3
 else
     module load Miniconda3
 fi
 
+# isolate conda environment from user's site-packages directory
+export PYTHONNOUSERSITE=True
+
 # activate conda environment
 source $(conda info --base)/etc/profile.d/conda.sh
 conda deactivate  # enforce base environment to be unloaded
 conda activate {conda_venv}
+
+# run the kernel
+exec python $@
 """
 
 VENV_TEMPLATE = """\
+# isolate virtual environment from user's site-packages directory
+export PYTHONNOUSERSITE=True
 
 # activate virtual environment
 source {venv_activate_script}
+
+# run the kernel
+exec python $@
+"""
+
+CONTAINER_TEMPLATE = """\
+module load Singularity
+
+# isolate container interpreter from user's site-packages directory
+export SINGULARITYENV_PYTHONNOUSERSITE=True
+
+# run the kernel inside the container
+exec singularity exec -B {runtime_dir} {container_args} {container} python $@
 """
 
 
@@ -55,6 +73,8 @@ def add_kernel(
     conda_path: T.Optional[Path] = None,
     conda_name: T.Optional[str] = None,
     venv: T.Optional[Path] = None,
+    container: T.Optional[Path] = None,
+    container_args: str = "",
     shared: bool = False,
 ):
     """Register a new jupyter kernel, with a wrapper script to load NeSI modules
@@ -64,14 +84,17 @@ def add_kernel(
     :param conda-path: path to a Conda environment
     :param conda-name: name of a Conda environment
     :param venv: path to a Python virtual environment
+    :param container: path to a Singularity container
+    :param container_args: additional parameters for 'singularity exec' command
     :param shared: share the kernel with other members of your NeSI project
     """
 
-    if conda_path is not None and conda_name is not None:
-        sys.exit("ERROR: --conda-path and --conda-name options are not compatible")
-
-    if (conda_path is not None or conda_name is not None) and venv is not None:
-        sys.exit("ERROR: --conda-* and --venv options are not compatible")
+    incompatible_options = conda_path, conda_name, venv, container
+    if sum(option is not None for option in incompatible_options) >= 2:
+        sys.exit(
+            "ERROR: --conda-path, --conda-name, --venv and --container options "
+            "are not compatible"
+        )
 
     # path to kernel directory
     if shared:
@@ -95,24 +118,33 @@ def add_kernel(
     if len(module) == 0:
         modules_txt = ""
     else:
-        modules_txt = "module load " + " ".join(module)
+        modules_txt = "module load " + " ".join(module) + "\n"
 
-    # add conda environment
-    if conda_name is None and conda_path is None:
-        conda_txt = ""
-    else:
+    # use a conda environment...
+    if conda_name is not None:
         if shared:
             print(
                 "Make sure your conda environment is accessible to members of "
                 f"{account}"
             )
-        conda_venv = conda_path.resolve() if conda_name is None else conda_name
-        conda_txt = CONDA_TEMPLATE.format(conda_venv=conda_venv)
+        exec_txt = CONDA_TEMPLATE.format(conda_venv=conda_name)
 
-    # add virtual environment
-    if venv is None:
-        venv_txt = ""
-    else:
+    elif conda_path is not None:
+        if shared:
+            print(
+                "Make sure your conda environment is accessible to members of "
+                f"{account}"
+            )
+        conda_path = conda_path.resolve()
+        if not conda_path.is_dir():
+            sys.exit(
+                f"ERROR: --conda-path ({conda_path}) should point to a conda "
+                "environment directory"
+            )
+        exec_txt = CONDA_TEMPLATE.format(conda_venv=conda_path)
+
+    # ...or a virtual environment...
+    elif venv is not None:
         if shared:
             print(
                 "Make sure your virtual environment is accessible to members of "
@@ -130,15 +162,34 @@ def add_kernel(
                 f"ERROR: --venv ({venv}) does not appear to be a virtual "
                 "environment (cannot find bin/activate)"
             )
-        venv_txt = VENV_TEMPLATE.format(venv_activate_script=venv_activate_script)
+        exec_txt = VENV_TEMPLATE.format(venv_activate_script=venv_activate_script)
         if not any(m.startswith("Python") for m in module):
             print(
                 "WARNING: Make sure to specify the appropriate Python module "
                 "for your virtual environment."
             )
 
+    # ...or a Singularity container...
+    elif container is not None:
+        container = container.resolve()
+        if shared:
+            print("Make sure your container is accessible to members of {account}")
+        if not container.is_file():
+            sys.exit(
+                f"ERROR: --container ({container}) should point to a Singularity "
+                "container image file"
+            )
+        runtime_dir = jupyter_core.paths.jupyter_runtime_dir()
+        exec_txt = CONTAINER_TEMPLATE.format(
+            container=container, container_args=container_args, runtime_dir=runtime_dir
+        )
+
+    # ...or the default python interpreter
+    else:
+        exec_txt = "# run the kernel\nexec python $@"
+
     wrapper_script_code = WRAPPER_TEMPLATE.format(
-        conda_txt=conda_txt, modules_txt=modules_txt, venv_txt=venv_txt
+        modules_txt=modules_txt, exec_txt=exec_txt
     )
 
     # use a temporary file for testing purpose
@@ -177,7 +228,10 @@ def add_kernel(
         print(exc.stdout)
         print(exc.stderr)
         wrapper_script.unlink()
-        sys.exit("ERROR: ipykernel could not be installed in the kernel environment")
+        sys.exit(
+            "ERROR: the ipykernel package could not be installed in the kernel "
+            "environment"
+        )
 
     # create a new kernel
     cmdargs = ["python", "-m", "ipykernel", "install", "--name", kernel_name]
@@ -217,5 +271,11 @@ def add_kernel(
 def main():
     defopt.run(
         add_kernel,
-        short={"conda-path": "p", "conda-name": "n", "venv": "v", "shared": "s"},
+        short={
+            "conda-path": "p",
+            "conda-name": "n",
+            "venv": "v",
+            "shared": "s",
+            "container": "c",
+        },
     )
