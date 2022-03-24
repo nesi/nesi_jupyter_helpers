@@ -101,29 +101,11 @@ def add_kernel(
     # path to kernel directory
     if shared:
         if account is None:
-            try:
-                slurm_job_id = os.environ["SLURM_JOB_ID"]
-                cmd_result = subprocess.run(
-                    ["scontrol", "show", f"jobid={slurm_job_id}", "-o"],
-                    capture_output=True,
-                    check=True,
-                )
-                account = next(
-                    chunk.split("=")[1]
-                    for chunk in cmd_result.stdout.decode().split(" ")
-                    if chunk.startswith("Account=")
-                )
-            except KeyError:
+            account = os.getenv("SLURM_JOB_ACCOUNT", os.getenv("JUPYTER_JOB_ACCOUNT"))
+            if account is None:
                 sys.exit(
                     "ERROR: cannot determine project to share kernel with, try "
                     "running within a Jupyter terminal or use the --account option"
-                )
-            except subprocess.CalledProcessError as exc:
-                print(exc.stdout)
-                print(exc.stderr)
-                sys.exit(
-                    "ERROR: cannot determine project to share kernel from current "
-                    "job, specify the account with the --account option"
                 )
         print(f"Creating shared kernel for {account}")
         prefix_dir = Path(f"/nesi/project/{account}/.jupyter")
