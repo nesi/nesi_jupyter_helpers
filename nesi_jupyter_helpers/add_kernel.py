@@ -76,6 +76,7 @@ def add_kernel(
     container: T.Optional[Path] = None,
     container_args: str = "",
     shared: bool = False,
+    account: T.Optional[str] = None,
 ):
     """Register a new jupyter kernel, with a wrapper script to load NeSI modules
 
@@ -87,6 +88,7 @@ def add_kernel(
     :param container: path to a Singularity container
     :param container_args: additional parameters for 'singularity exec' command
     :param shared: share the kernel with other members of your NeSI project
+    :param account: NeSI account for a shared kernel, instead of current job's
     """
 
     incompatible_options = conda_path, conda_name, venv, container
@@ -98,12 +100,31 @@ def add_kernel(
 
     # path to kernel directory
     if shared:
-        account = os.getenv("SLURM_JOB_ACCOUNT")
         if account is None:
-            sys.exit(
-                "ERROR: cannot determine project to share kernel with, try"
-                "running within a Jupyter terminal"
-            )
+            try:
+                slurm_job_id = os.environ["SLURM_JOB_ID"]
+                cmd_result = subprocess.run(
+                    ["scontrol", "show", f"jobid={slurm_job_id}", "-o"],
+                    capture_output=True,
+                    check=True,
+                )
+                account = next(
+                    chunk.split("=")[1]
+                    for chunk in cmd_result.stdout.decode().split(" ")
+                    if chunk.startswith("Account=")
+                )
+            except KeyError:
+                sys.exit(
+                    "ERROR: cannot determine project to share kernel with, try "
+                    "running within a Jupyter terminal or use the --account option"
+                )
+            except subprocess.CalledProcessError as exc:
+                print(exc.stdout)
+                print(exc.stderr)
+                sys.exit(
+                    "ERROR: cannot determine project to share kernel from current "
+                    "job, specify the account with the --account option"
+                )
         print(f"Creating shared kernel for {account}")
         prefix_dir = Path(f"/nesi/project/{account}/.jupyter")
         kernel_dir = prefix_dir / "share/jupyter/kernels/" / kernel_name
@@ -277,5 +298,6 @@ def main():
             "venv": "v",
             "shared": "s",
             "container": "c",
+            "account": "a",
         },
     )
