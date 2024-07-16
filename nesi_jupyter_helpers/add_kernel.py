@@ -20,7 +20,7 @@ set -e
 module purge
 
 # load required modules
-module load slurm NeSI  # ensure these modules gets loaded even on Maui ancil.
+module load JupyterLab  # ensure these modules gets loaded even on Maui ancil.
 {modules_txt}
 {exec_txt}
 """
