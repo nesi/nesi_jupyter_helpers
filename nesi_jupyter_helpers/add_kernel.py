@@ -20,9 +20,9 @@ set -e
 module purge
 
 # load required modules
-module load JupyterLab  # ensure these modules gets loaded even on Maui ancil.
-{modules_txt}
-{exec_txt}
+#module load JupyterLab  # ensure these modules gets loaded even on Maui ancil.
+#{modules_txt}
+#{exec_txt}
 """
 
 CONDA_TEMPLATE = """\
