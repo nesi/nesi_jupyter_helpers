@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="nesi_jupyter_helpers",
-    version="0.3.1",
+    version="0.4.0",
     description="Tools to help users of jupyter.nesi.org.nz",
     url="https://github.com/nesi/nesi_jupyter_helpers",
     author=" New Zealand eScience Infrastructure",
