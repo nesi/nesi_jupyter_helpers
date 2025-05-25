@@ -20,7 +20,6 @@ set -e
 module purge
 
 # load required modules
-module load slurm NeSI || true  # ensure these modules gets loaded even on Maui ancil, ok to fail on ondemand
 {modules_txt}
 {exec_txt}
 """
@@ -122,6 +121,19 @@ def add_kernel(
         modules_txt = ""
     else:
         modules_txt = "module load " + " ".join(module) + "\n"
+
+        # Python/3.11.6-foss-2023a module does not have ipykernel, warn the
+        # user if they are using this module and not using a venv because it
+        # could install things into ~/.local that conflict with JupyterLab
+        if "Python/3.11.6-foss-2023a" in module and venv is None:
+            print(
+                "WARNING: ipykernel is not included in "
+                "Python/3.11.6-foss-2023a - we recommend using a virtual "
+                "enviroment (--venv) or the latest JupyterLab "
+                "module from the foss/2023a toolchain instead to avoid "
+                "ipykernel being installed under ~/.local (which could cause "
+                "problems for JupyterLab)"
+            )
 
     # use a conda environment...
     if conda_name is not None:
