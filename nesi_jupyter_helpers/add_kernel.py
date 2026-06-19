@@ -21,7 +21,6 @@ module purge
 
 # load required modules
 {modules_txt}
-
 {exec_txt}
 """
 
@@ -57,8 +56,12 @@ exec python $@
 """
 
 CONTAINER_TEMPLATE = """\
+
+# tell bash_kernel to run inside your container instead of a normal bash shell
+export BASH_KERNEL_CMD="apptainer exec --nv -B {runtime_dir} {container_args} {container} bash"
+
 # Run the container inside the kernel using python3/bash_kernel
-exec python -m bash_kernel apptainer exec -B {runtime_dir} {container_args} {container} bash $@
+exec python -m bash_kernel $@
 """
 
 
@@ -230,7 +233,6 @@ def add_kernel(
     if container is None:
         print("Checking & installing ipykernel package in the kernel environment")
         try:
-        
             subprocess.run(
                 [wrapper_script, "-m", "pip", "install", "ipykernel"],
                 check=True,
