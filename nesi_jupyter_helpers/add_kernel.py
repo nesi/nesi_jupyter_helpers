@@ -21,6 +21,7 @@ module purge
 
 # load required modules
 {modules_txt}
+
 {exec_txt}
 """
 
@@ -210,7 +211,6 @@ def add_kernel(
     wrapper_script.chmod(0o770)
 
     print("Testing wrapper script")
-    import pdb; pdb.set_trace()
     try:
         subprocess.run(
             [wrapper_script, "--version"],
@@ -229,12 +229,13 @@ def add_kernel(
 
     print("Checking & installing ipykernel package in the kernel environment")
     try:
-        subprocess.run(
-            [wrapper_script, "-m", "pip", "install", "ipykernel"],
-            check=True,
-            capture_output=True,
-            universal_newlines=True,
-        )
+        if container is not None:
+            subprocess.run(
+                [wrapper_script, "-m", "pip", "install", "ipykernel"],
+                check=True,
+                capture_output=True,
+                universal_newlines=True,
+            )
     except subprocess.CalledProcessError as exc:
         print(exc.stdout)
         print(exc.stderr)
@@ -245,13 +246,14 @@ def add_kernel(
         )
 
     # create a new kernel
-    cmdargs = ["python", "-m", "ipykernel", "install", "--name", kernel_name]
-    if shared:
-        cmdargs.extend(["--prefix", prefix_dir])
-    else:
-        cmdargs.append("--user")
-    print(f"Installing kernel: {' '.join(map(str, cmdargs))}")
-    subprocess.run(cmdargs, check=True)
+    if container is not None:
+        cmdargs = ["python", "-m", "ipykernel", "install", "--name", kernel_name]
+        if shared:
+            cmdargs.extend(["--prefix", prefix_dir])
+        else:
+            cmdargs.append("--user")
+        print(f"Installing kernel: {' '.join(map(str, cmdargs))}")
+        subprocess.run(cmdargs, check=True)
 
     # add the wrapper script to the kernel dir
     wrapper_script_dest = kernel_dir / "wrapper.bash"
