@@ -227,23 +227,25 @@ def add_kernel(
             "options are correct"
         )
 
-    print("Checking & installing ipykernel package in the kernel environment")
-    try:
-        if container is not None:
+    import pdb; pdb.set_trace()
+    if container is not None:
+        print("Checking & installing ipykernel package in the kernel environment")
+        try:
+        
             subprocess.run(
                 [wrapper_script, "-m", "pip", "install", "ipykernel"],
                 check=True,
                 capture_output=True,
                 universal_newlines=True,
             )
-    except subprocess.CalledProcessError as exc:
-        print(exc.stdout)
-        print(exc.stderr)
-        wrapper_script.unlink()
-        sys.exit(
-            "ERROR: the ipykernel package could not be installed in the kernel "
-            "environment"
-        )
+        except subprocess.CalledProcessError as exc:
+            print(exc.stdout)
+            print(exc.stderr)
+            wrapper_script.unlink()
+            sys.exit(
+                "ERROR: the ipykernel package could not be installed in the kernel "
+                "environment"
+            )
 
     # create a new kernel
     if container is not None:
