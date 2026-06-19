@@ -247,14 +247,13 @@ def add_kernel(
             )
 
     # create a new kernel
-    if container is None:
-        cmdargs = ["python", "-m", "ipykernel", "install", "--name", kernel_name]
-        if shared:
-            cmdargs.extend(["--prefix", prefix_dir])
-        else:
-            cmdargs.append("--user")
-        print(f"Installing kernel: {' '.join(map(str, cmdargs))}")
-        subprocess.run(cmdargs, check=True)
+    cmdargs = ["python", "-m", "ipykernel", "install", "--name", kernel_name]
+    if shared:
+        cmdargs.extend(["--prefix", prefix_dir])
+    else:
+        cmdargs.append("--user")
+    print(f"Installing kernel: {' '.join(map(str, cmdargs))}")
+    subprocess.run(cmdargs, check=True)
 
     # add the wrapper script to the kernel dir
     wrapper_script_dest = kernel_dir / "wrapper.bash"
