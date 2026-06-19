@@ -247,7 +247,7 @@ def add_kernel(
             )
 
     # create a new kernel
-    if container is not None:
+    if container is None:
         cmdargs = ["python", "-m", "ipykernel", "install", "--name", kernel_name]
         if shared:
             cmdargs.extend(["--prefix", prefix_dir])
