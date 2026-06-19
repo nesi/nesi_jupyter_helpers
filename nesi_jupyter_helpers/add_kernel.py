@@ -79,8 +79,8 @@ def add_kernel(
 
     :param kernel_name: Jupyter kernel name
     :param module: NeSI module(s) to load before running the kernel
-    :param conda-path: path to a Conda environment
-    :param conda-name: name of a Conda environment
+    :param conda_path: path to a Conda environment
+    :param conda_name: name of a Conda environment
     :param venv: path to a Python virtual environment
     :param container: path to a Singularity container
     :param container_args: additional parameters for 'singularity exec' command
@@ -292,8 +292,8 @@ def main():
     defopt.run(
         add_kernel,
         short={
-            "conda_path": "p",
-            "conda_name": "n",
+            "conda-path": "p",
+            "conda-name": "n",
             "venv": "v",
             "shared": "s",
             "container": "c",
