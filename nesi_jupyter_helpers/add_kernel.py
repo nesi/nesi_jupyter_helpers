@@ -56,11 +56,8 @@ exec python $@
 """
 
 CONTAINER_TEMPLATE = """\
-# isolate container interpreter from user's site-packages directory
-export APPTAINERENV_PYTHONNOUSERSITE=True
-
-# run the kernel inside the container
-exec apptainer exec -B {runtime_dir} {container_args} {container} python $@
+# Run the container inside the kernel using python3/bash_kernel
+exec python3 -m bash_kernel apptainer exec -B {runtime_dir} {container_args} {container} bash $@
 """
 
 
@@ -261,14 +258,20 @@ def add_kernel(
     print(f"Added wrapper script in {wrapper_script_dest}")
 
     # modify the kernel description file
-    kernel_def = {
-        "argv": [
+    if container is not None:
+        # the container wrapper launches bash_kernel itself, so the kernel only
+        # needs to pass the connection file (no "-m ipykernel_launcher")
+        argv = [str(wrapper_script_dest), "-f", "{connection_file}"]
+    else:
+        argv = [
             str(wrapper_script_dest),
             "-m",
             "ipykernel_launcher",
             "-f",
             "{connection_file}",
-        ],
+        ]
+    kernel_def = {
+        "argv": argv,
         "display_name": kernel_name,
         "language": "python",
     }
