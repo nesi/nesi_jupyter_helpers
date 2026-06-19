@@ -292,8 +292,8 @@ def main():
     defopt.run(
         add_kernel,
         short={
-            "conda-path": "p",
-            "conda-name": "n",
+            "conda_path": "p",
+            "conda_name": "n",
             "venv": "v",
             "shared": "s",
             "container": "c",
