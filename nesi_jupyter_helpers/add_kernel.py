@@ -210,6 +210,7 @@ def add_kernel(
     wrapper_script.chmod(0o770)
 
     print("Testing wrapper script")
+    import pdb; pdb.set_trace()
     try:
         subprocess.run(
             [wrapper_script, "--version"],
