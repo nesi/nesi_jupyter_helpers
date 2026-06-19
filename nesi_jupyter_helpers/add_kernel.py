@@ -56,7 +56,6 @@ exec python $@
 """
 
 CONTAINER_TEMPLATE = """\
-
 # tell bash_kernel to run inside your container instead of a normal bash shell
 export BASH_KERNEL_CMD="apptainer exec --nv -B {runtime_dir} {container_args} {container} bash"
 
