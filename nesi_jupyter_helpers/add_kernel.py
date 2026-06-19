@@ -227,8 +227,7 @@ def add_kernel(
             "options are correct"
         )
 
-    import pdb; pdb.set_trace()
-    if container is not None:
+    if container is None:
         print("Checking & installing ipykernel package in the kernel environment")
         try:
         
