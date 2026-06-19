@@ -98,8 +98,8 @@ def test_container():
     kernel_name = f"test_kernel_{uuid.uuid4()}"
     container = Path.cwd() / f"{kernel_name}.sif"
     run(
-        "module purge && module load Singularity/3.8.0 && "
-        f"singularity pull {container} docker://jupyter/base-notebook:lab-3.0.16",
+        "module purge && module load Apptainer && "
+        f"apptainer pull {container} docker://jupyter/base-notebook:lab-3.0.16",
         shell=True,
         check=True,
     )
@@ -117,8 +117,8 @@ def test_container_args():
     kernel_name = f"test_kernel_{uuid.uuid4()}"
     container = Path.cwd() / f"{kernel_name}.sif"
     run(
-        "module purge && module load Singularity/3.8.0 && "
-        f"singularity pull {container} docker://jupyter/base-notebook:lab-3.0.16",
+        "module purge && module load Apptainer && "
+        f"apptainer pull {container} docker://jupyter/base-notebook:lab-3.0.16",
         shell=True,
         check=True,
     )

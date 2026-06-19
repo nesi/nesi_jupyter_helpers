@@ -75,9 +75,9 @@ nesi-add-kernel my_test_kernel Python/3.8.2-gimkl-2020a --venv my_test_venv
 ```
 
 
-### Singularity container
+### Apptainer container
 
-To use a Singularity container, use the `-c` or `--container` options as follows:
+To use an Apptainer container, use the `-c` or `--container` options as follows:
 ```
 nesi-add-kernel my_test_kernel -c <container_image.sif>
 ```
@@ -87,23 +87,23 @@ Note that your container **must** have the `ipykernel` Python package installed
 in it to be able to work as a Jupyter kernel.
 
 Additionally, you can use the `--container-args` option to pass more arguments
-to the `singularity exec` command used to instantiate the kernel.
+to the `apptainer exec` command used to instantiate the kernel.
 
 Here is an example instantiating a NVIDIA NGC container as a kernel. First, we
 need to pull the container:
 ```
 module purge
-module load Singularity/3.8.0
-singularity pull nvidia_tf.sif docker://nvcr.io/nvidia/tensorflow:21.07-tf2-py3
+module load Apptainer
+apptainer pull nvidia_tf.sif docker://nvcr.io/nvidia/tensorflow:21.07-tf2-py3
 ```
-then we can instantiate the kernel, using the `--nv` singularity flag to ensure
+then we can instantiate the kernel, using the `--nv` apptainer flag to ensure
 that the GPU will be found at runtime (assuming our Jupyter session has access
 to a GPU):
 ```
 nesi-add-kernel nvidia_tf -c nvidia_tf.sif --container-args "'--nv'"
 ```
 Note that the double-quoting of `--nv` is needed to properly pass the options to
-`singularity exec`.
+`apptainer exec`.
 
 
 ## For maintainers
