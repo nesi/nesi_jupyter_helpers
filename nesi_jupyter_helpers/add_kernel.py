@@ -57,7 +57,7 @@ exec python $@
 
 CONTAINER_TEMPLATE = """\
 # Run the container inside the kernel using python3/bash_kernel
-exec python3 -m bash_kernel apptainer exec -B {runtime_dir} {container_args} {container} bash $@
+exec python -m bash_kernel apptainer exec -B {runtime_dir} {container_args} {container} bash $@
 """
 
 
