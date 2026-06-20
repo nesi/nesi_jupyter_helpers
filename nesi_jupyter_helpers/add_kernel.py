@@ -8,7 +8,6 @@ import typing as T
 from pathlib import Path
 
 import defopt
-import jupyter_core.paths
 
 
 WRAPPER_TEMPLATE = """\
@@ -55,9 +54,26 @@ source {venv_activate_script}
 exec python $@
 """
 
-CONTAINER_TEMPLATE = """\
+# run a python kernel *inside* the container (the container must provide python
+# with ipykernel installed)
+CONTAINER_PYTHON_TEMPLATE = """\
+# isolate container interpreter from user's site-packages directory
+export APPTAINERENV_PYTHONNOUSERSITE=True
+
+# bind the directory holding the Jupyter connection file (the last argument) so
+# the in-container interpreter can read it, whoever launches the kernel (this is
+# resolved at launch time so it works for shared kernels too)
+for connection_file in "$@"; do :; done
+connection_dir="$(dirname "$connection_file")"
+
+# run a python kernel inside the container
+exec apptainer exec -B "$connection_dir" {container_args} {container} python "$@"
+"""
+
+# run a bash kernel on the host that dispatches every cell into the container
+CONTAINER_BASH_TEMPLATE = """\
 # tell bash_kernel to run inside your container instead of a normal bash shell
-export BASH_KERNEL_CMD="apptainer exec --nv -B {runtime_dir} {container_args} {container} bash"
+export BASH_KERNEL_CMD="apptainer exec {container_args} {container} bash"
 
 # Run the container inside the kernel using python3/bash_kernel
 exec python -m bash_kernel $@
@@ -70,7 +86,8 @@ def add_kernel(
     conda_path: T.Optional[Path] = None,
     conda_name: T.Optional[str] = None,
     venv: T.Optional[Path] = None,
-    container: T.Optional[Path] = None,
+    container_python: T.Optional[Path] = None,
+    container_bash: T.Optional[Path] = None,
     container_args: str = "",
     shared: bool = False,
     account: T.Optional[str] = None,
@@ -82,17 +99,22 @@ def add_kernel(
     :param conda_path: path to a Conda environment
     :param conda_name: name of a Conda environment
     :param venv: path to a Python virtual environment
-    :param container: path to a Singularity container
-    :param container_args: additional parameters for 'singularity exec' command
+    :param container_python: path to an Apptainer container image, run a python
+        kernel inside the container
+    :param container_bash: path to an Apptainer container image, run a bash
+        kernel that dispatches each cell into the container
+    :param container_args: additional parameters for the 'apptainer exec' command
     :param shared: share the kernel with other members of your NeSI project
     :param account: NeSI account for a shared kernel, instead of current job's
     """
 
-    incompatible_options = conda_path, conda_name, venv, container
+    incompatible_options = (
+        conda_path, conda_name, venv, container_python, container_bash
+    )
     if sum(option is not None for option in incompatible_options) >= 2:
         sys.exit(
-            "ERROR: --conda-path, --conda-name, --venv and --container options "
-            "are not compatible"
+            "ERROR: --conda-path, --conda-name, --venv, --container-python and "
+            "--container-bash options are not compatible"
         )
 
     # path to kernel directory
@@ -182,19 +204,34 @@ def add_kernel(
                 "for your virtual environment."
             )
 
-    # ...or a Singularity container...
-    elif container is not None:
-        container = container.resolve()
+    # ...or a container running a python kernel...
+    elif container_python is not None:
+        container_python = container_python.resolve()
         if shared:
-            print("Make sure your container is accessible to members of {account}")
-        if not container.is_file():
+            print(f"Make sure your container is accessible to members of {account}")
+        if not container_python.is_file():
             sys.exit(
-                f"ERROR: --container ({container}) should point to a Apptainer "
-                "container image file"
+                f"ERROR: --container-python ({container_python}) should point to "
+                "an Apptainer container image file"
             )
-        runtime_dir = jupyter_core.paths.jupyter_runtime_dir()
-        exec_txt = CONTAINER_TEMPLATE.format(
-            container=container, container_args=container_args, runtime_dir=runtime_dir
+        exec_txt = CONTAINER_PYTHON_TEMPLATE.format(
+            container=container_python,
+            container_args=container_args,
+        )
+
+    # ...or a container running a bash kernel...
+    elif container_bash is not None:
+        container_bash = container_bash.resolve()
+        if shared:
+            print(f"Make sure your container is accessible to members of {account}")
+        if not container_bash.is_file():
+            sys.exit(
+                f"ERROR: --container-bash ({container_bash}) should point to "
+                "an Apptainer container image file"
+            )
+        exec_txt = CONTAINER_BASH_TEMPLATE.format(
+            container=container_bash,
+            container_args=container_args,
         )
 
     # ...or the default python interpreter
@@ -229,7 +266,7 @@ def add_kernel(
             "options are correct"
         )
 
-    if container is None:
+    if container_bash is None:
         print("Checking & installing ipykernel package in the kernel environment")
         try:
             subprocess.run(
@@ -262,10 +299,11 @@ def add_kernel(
     print(f"Added wrapper script in {wrapper_script_dest}")
 
     # modify the kernel description file
-    if container is not None:
+    if container_bash is not None:
         # the container wrapper launches bash_kernel itself, so the kernel only
         # needs to pass the connection file (no "-m ipykernel_launcher")
         argv = [str(wrapper_script_dest), "-f", "{connection_file}"]
+        language = "bash"
     else:
         argv = [
             str(wrapper_script_dest),
@@ -274,10 +312,11 @@ def add_kernel(
             "-f",
             "{connection_file}",
         ]
+        language = "python"
     kernel_def = {
         "argv": argv,
         "display_name": kernel_name,
-        "language": "python",
+        "language": language,
     }
     kernel_file = kernel_dir / "kernel.json"
     with kernel_file.open("w") as fd:
@@ -296,7 +335,8 @@ def main():
             "conda-name": "n",
             "venv": "v",
             "shared": "s",
-            "container": "c",
+            "container-python": "cp",
+            "container-bash": "cb",
             "account": "a",
         },
     )

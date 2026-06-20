@@ -77,33 +77,51 @@ nesi-add-kernel my_test_kernel Python/3.8.2-gimkl-2020a --venv my_test_venv
 
 ### Apptainer container
 
-To use an Apptainer container, use the `-c` or `--container` options as follows:
+You can run an Apptainer container as a kernel in two ways:
+
+- `-cp` / `--container-python`: run a **Python** kernel *inside* the container.
+  The container must provide a Python interpreter with the `ipykernel` package.
+- `-cb` / `--container-bash`: run a **bash** kernel that dispatches every cell
+  into the container (via `bash_kernel`). The container itself does not need
+  `ipykernel`, but the environment you load must provide `bash_kernel` (i.e. a
+  module or virtual environment with `bash_kernel` installed).
+
+To run a Python kernel inside the container:
 ```
-nesi-add-kernel my_test_kernel -c <container_image.sif>
+nesi-add-kernel my_test_kernel -cp <container_image.sif>
+```
+To run a bash kernel that executes cells inside the container:
+```
+nesi-add-kernel my_test_kernel <module_with_bash_kernel> -cb <container_image.sif>
 ```
 where `<container_image.sif>` is a path to your container image.
 
-Note that your container **must** have the `ipykernel` Python package installed
-in it to be able to work as a Jupyter kernel.
+#### Passing extra arguments to `apptainer exec`
 
-Additionally, you can use the `--container-args` option to pass more arguments
-to the `apptainer exec` command used to instantiate the kernel.
+Use the `--container-args` option to pass additional arguments through to the
+`apptainer exec` command (this works for both `-cp` and `-cb`). Because these
+arguments start with `-`, use the `=` form so they are not mistaken for options
+to `nesi-add-kernel` itself:
+```
+nesi-add-kernel my_test_kernel -cp <container_image.sif> --container-args="--nv"
+```
+You can pass several at once by quoting them together:
+```
+nesi-add-kernel my_test_kernel -cp <container_image.sif> --container-args="--nv --pwd /opt/app"
+```
 
-Here is an example instantiating a NVIDIA NGC container as a kernel. First, we
-need to pull the container:
+For example, to instantiate a NVIDIA NGC container as a GPU-enabled Python
+kernel, first pull the container:
 ```
 module purge
 module load Apptainer
 apptainer pull nvidia_tf.sif docker://nvcr.io/nvidia/tensorflow:21.07-tf2-py3
 ```
-then we can instantiate the kernel, using the `--nv` apptainer flag to ensure
-that the GPU will be found at runtime (assuming our Jupyter session has access
-to a GPU):
+then instantiate the kernel, using the `--nv` apptainer flag so the GPU is found
+at runtime (assuming your Jupyter session has access to a GPU):
 ```
-nesi-add-kernel nvidia_tf -c nvidia_tf.sif --container-args "'--nv'"
+nesi-add-kernel nvidia_tf -cp nvidia_tf.sif --container-args="--nv"
 ```
-Note that the double-quoting of `--nv` is needed to properly pass the options to
-`apptainer exec`.
 
 
 ## For maintainers
