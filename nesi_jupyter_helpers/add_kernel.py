@@ -60,14 +60,8 @@ CONTAINER_PYTHON_TEMPLATE = """\
 # isolate container interpreter from user's site-packages directory
 export APPTAINERENV_PYTHONNOUSERSITE=True
 
-# bind the directory holding the Jupyter connection file (the last argument) so
-# the in-container interpreter can read it, whoever launches the kernel (this is
-# resolved at launch time so it works for shared kernels too)
-for connection_file in "$@"; do :; done
-connection_dir="$(dirname "$connection_file")"
-
 # run a python kernel inside the container
-exec apptainer exec -B "$connection_dir" {container_args} {container} python "$@"
+exec apptainer exec {container_args} {container} python "$@"
 """
 
 # run a bash kernel on the host that dispatches every cell into the container
