@@ -102,6 +102,11 @@ def add_kernel(
     :param account: NeSI account for a shared kernel, instead of current job's
     """
 
+    # jupyter lowercases kernel names when installing a kernelspec, so use the
+    # lowercase name everywhere and keep the original for the display name
+    display_name = kernel_name
+    kernel_name = kernel_name.lower()
+
     incompatible_options = (
         conda_path, conda_name, venv, container_python, container_bash
     )
@@ -309,7 +314,7 @@ def add_kernel(
         language = "python"
     kernel_def = {
         "argv": argv,
-        "display_name": kernel_name,
+        "display_name": display_name,
         "language": language,
     }
     kernel_file = kernel_dir / "kernel.json"
