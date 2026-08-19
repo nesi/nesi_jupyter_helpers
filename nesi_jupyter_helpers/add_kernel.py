@@ -133,7 +133,11 @@ def add_kernel(
 
     # check kernel directory does not already exist
     if kernel_dir.exists():
-        sys.exit(f"ERROR: Kernel already exists: {kernel_dir}")
+        sys.exit(
+            f"ERROR: Kernel ({display_name}) already exists: {kernel_dir}\n"
+            f"If you want to reinstall it, first run: jupyter-kernelspec remove "
+            f"{kernel_name}, then run nesi-add-kernel again"
+        )
 
     # create a bash wrapper script
     if len(module) == 0:
