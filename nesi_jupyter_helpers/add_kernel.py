@@ -8,6 +8,7 @@ import typing as T
 from pathlib import Path
 
 import defopt
+from ipykernel.kernelspec import RESOURCES as IPYKERNEL_RESOURCES
 
 
 WRAPPER_TEMPLATE = """\
@@ -287,18 +288,23 @@ def add_kernel(
                 "environment"
             )
 
-    # create a new kernel
-    cmdargs = ["python", "-m", "ipykernel", "install", "--name", kernel_name]
-    if shared:
-        cmdargs.extend(["--prefix", prefix_dir])
-    else:
-        cmdargs.append("--user")
-    print(f"Installing kernel: {' '.join(map(str, cmdargs))}")
-    subprocess.run(cmdargs, check=True)
+    # create a new kernel dir, without "ipykernel install" as it copies the
+    # permissions of a staging dir onto the kernel dir, dropping the setgid bit
+    # that makes new files inherit the project group for a shared kernel
+    print(f"Installing kernel in {kernel_dir}")
+    kernel_dir.mkdir(parents=True)
 
-    # add the wrapper script to the kernel dir
+    # add the ipykernel logos, copying contents only to keep the kernel dir's
+    # group and permissions
+    for logo in Path(IPYKERNEL_RESOURCES).iterdir():
+        shutil.copyfile(logo, kernel_dir / logo.name)
+
+    # add the wrapper script to the kernel dir, as a new file created in the
+    # kernel dir (so it inherits its group) with the tested script's contents
     wrapper_script_dest = kernel_dir / "wrapper.bash"
-    shutil.move(wrapper_script, wrapper_script_dest)
+    wrapper_script_dest.write_text(wrapper_script.read_text())
+    wrapper_script_dest.chmod(0o770)
+    wrapper_script.unlink()
     print(f"Added wrapper script in {wrapper_script_dest}")
 
     # modify the kernel description file
